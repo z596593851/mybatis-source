@@ -26,10 +26,13 @@ import org.apache.ibatis.reflection.property.PropertyTokenizer;
  */
 public interface ObjectWrapper {
 
+  // 根据指定属性取值(通过反射操作对象的getter方法)
   Object get(PropertyTokenizer prop);
 
+  // 根据指定属性赋值(通过反射操作对象的setter方法)
   void set(PropertyTokenizer prop, Object value);
 
+  // 检查对象是否包含指定属性
   String findProperty(String name, boolean useCamelCaseMapping);
 
   String[] getGetterNames();
@@ -40,8 +43,10 @@ public interface ObjectWrapper {
 
   Class<?> getGetterType(String name);
 
+  // 检查对象是否包含指定属性的getter方法（通过反射操作类）
   boolean hasSetter(String name);
 
+  // 检查对象是否包含指定属性的setter方法（通过反射操作类）
   boolean hasGetter(String name);
 
   MetaObject instantiatePropertyValue(String name, PropertyTokenizer prop, ObjectFactory objectFactory);

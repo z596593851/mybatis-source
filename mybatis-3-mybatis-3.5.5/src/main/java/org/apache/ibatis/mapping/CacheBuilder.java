@@ -91,9 +91,11 @@ public class CacheBuilder {
 
   public Cache build() {
     setDefaultImplementations();
+    // 创建默认的PerpetualCache对象
     Cache cache = newBaseCacheInstance(implementation, id);
     setCacheProperties(cache);
     // issue #352, do not apply decorators to custom caches
+    // 如果是PerpetualCache类，则用装饰者逐层包装
     if (PerpetualCache.class.equals(cache.getClass())) {
       for (Class<? extends Cache> decorator : decorators) {
         cache = newCacheDecoratorInstance(decorator, cache);
@@ -126,11 +128,14 @@ public class CacheBuilder {
         ((ScheduledCache) cache).setClearInterval(clearInterval);
       }
       if (readWrite) {
+        //嵌套读写缓存
         cache = new SerializedCache(cache);
       }
+      //嵌套日志缓存
       cache = new LoggingCache(cache);
       cache = new SynchronizedCache(cache);
       if (blocking) {
+        //嵌套阻塞缓存
         cache = new BlockingCache(cache);
       }
       return cache;

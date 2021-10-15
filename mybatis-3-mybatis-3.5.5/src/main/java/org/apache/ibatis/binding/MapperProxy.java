@@ -79,6 +79,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
+      // 如果是Object类中的方法，默认不代理
       if (Object.class.equals(method.getDeclaringClass())) {
         return method.invoke(this, args);
       } else {
@@ -100,6 +101,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
       }
 
       return methodCache.computeIfAbsent(method, m -> {
+        // 兼容Java8特性中接口的default方法
         if (m.isDefault()) {
           try {
             if (privateLookupInMethod == null) {

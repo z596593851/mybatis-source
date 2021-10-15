@@ -48,6 +48,7 @@ public class MetaClass {
     return MetaClass.forClass(propType, reflectorFactory);
   }
 
+  //class中是否有名为name的属性
   public String findProperty(String name) {
     StringBuilder prop = buildProperty(name, new StringBuilder());
     return prop.length() > 0 ? prop.toString() : null;
@@ -146,6 +147,7 @@ public class MetaClass {
     }
   }
 
+  //快速检查指定的属性是否包含 getter / setter 方法
   public boolean hasGetter(String name) {
     PropertyTokenizer prop = new PropertyTokenizer(name);
     if (prop.hasNext()) {
@@ -176,6 +178,7 @@ public class MetaClass {
         builder.append(propertyName);
         builder.append(".");
         MetaClass metaProp = metaClassForProperty(propertyName);
+        //递归找
         metaProp.buildProperty(prop.getChildren(), builder);
       }
     } else {

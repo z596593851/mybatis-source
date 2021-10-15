@@ -33,8 +33,7 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
 /**
- * @author Clinton Begin
- * @author Eduardo Macarron
+ * 装饰者，增加二级缓存的功能
  */
 public class CachingExecutor implements Executor {
 
@@ -99,8 +98,11 @@ public class CachingExecutor implements Executor {
         ensureNoOutParams(ms, boundSql);
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
+        //第一次进来时，二级缓存为空
         if (list == null) {
+          //查数据库
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+          //放入二级缓存，但要等到commit时
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
         return list;

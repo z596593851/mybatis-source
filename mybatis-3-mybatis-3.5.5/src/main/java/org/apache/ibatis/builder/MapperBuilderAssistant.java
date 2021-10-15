@@ -129,13 +129,16 @@ public class MapperBuilderAssistant extends BaseBuilder {
       boolean blocking,
       Properties props) {
     Cache cache = new CacheBuilder(currentNamespace)
+      //默认的PerpetualCache缓存
         .implementation(valueOrDefault(typeClass, PerpetualCache.class))
+      //增加LRU装饰器
         .addDecorator(valueOrDefault(evictionClass, LruCache.class))
         .clearInterval(flushInterval)
         .size(size)
         .readWrite(readWrite)
         .blocking(blocking)
         .properties(props)
+      //构建二级缓存
         .build();
     configuration.addCache(cache);
     currentCache = cache;
@@ -423,8 +426,10 @@ public class MapperBuilderAssistant extends BaseBuilder {
       String resultSet,
       String foreignColumn,
       boolean lazy) {
+    // 看看这个映射结果集的类型，有没有TypeHandler能处理它
     Class<?> javaTypeClass = resolveResultJavaType(resultType, property, javaType);
     TypeHandler<?> typeHandlerInstance = resolveTypeHandler(javaTypeClass, typeHandler);
+    // 处理复杂结果集的列名(极特殊用法)
     List<ResultMapping> composites;
     if ((nestedSelect == null || nestedSelect.isEmpty()) && (foreignColumn == null || foreignColumn.isEmpty())) {
       composites = Collections.emptyList();

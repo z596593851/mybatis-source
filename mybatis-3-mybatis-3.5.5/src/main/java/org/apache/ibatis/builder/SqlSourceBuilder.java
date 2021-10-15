@@ -41,9 +41,12 @@ public class SqlSourceBuilder extends BaseBuilder {
   }
 
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
+    // ParameterMappingTokenHandler 负责替换成 ? 占位符
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
+    // GenericTokenParser 负责找 #{}
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
     String sql;
+    //是否删除SQL中的多余空格
     if (configuration.isShrinkWhitespacesInSql()) {
       sql = parser.parse(removeExtraWhitespaces(originalSql));
     } else {

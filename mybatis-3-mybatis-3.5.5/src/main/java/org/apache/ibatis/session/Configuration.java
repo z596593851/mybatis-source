@@ -643,6 +643,7 @@ public class Configuration {
   }
 
   public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
+    // 默认值的处理
     executorType = executorType == null ? defaultExecutorType : executorType;
     executorType = executorType == null ? ExecutorType.SIMPLE : executorType;
     Executor executor;
@@ -653,9 +654,11 @@ public class Configuration {
     } else {
       executor = new SimpleExecutor(this, transaction);
     }
+    // 包装二级缓存
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
+    // 拦截器增强（动态代理）
     executor = (Executor) interceptorChain.pluginAll(executor);
     return executor;
   }

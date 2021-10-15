@@ -51,14 +51,19 @@ public abstract class BaseExecutor implements Executor {
 
   private static final Log log = LogFactory.getLog(BaseExecutor.class);
 
+  // 事务
   protected Transaction transaction;
+  // 装饰者（比如普通的 Executor 可以通过套一层装饰者，实现二级缓存的预检查和存储）
   protected Executor wrapper;
-
+  // 延迟加载的队列
   protected ConcurrentLinkedQueue<DeferredLoad> deferredLoads;
+  //一级缓存
   protected PerpetualCache localCache;
+  // 输出类型的参数缓存
   protected PerpetualCache localOutputParameterCache;
   protected Configuration configuration;
 
+  // 查询深度计数器(可能会遇到嵌套查询)
   protected int queryStack;
   private boolean closed;
 
@@ -131,7 +136,9 @@ public abstract class BaseExecutor implements Executor {
 
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+    // 获取要执行查询的SQL——解析sqlnode（if where等）,解析#{}占位符
     BoundSql boundSql = ms.getBoundSql(parameter);
+    // 构造缓存标识（为了分辨出每次 SqlSession 的查询时，都是用的哪个 statement ，用了什么 SQL ，传了什么参数）
     CacheKey key = createCacheKey(ms, parameter, rowBounds, boundSql);
     return query(ms, parameter, rowBounds, resultHandler, key, boundSql);
   }
@@ -143,27 +150,33 @@ public abstract class BaseExecutor implements Executor {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+    // 如果是刚开始查询，并且statement定义的需要刷新缓存，则前置清空一次一级缓存
     if (queryStack == 0 && ms.isFlushCacheRequired()) {
       clearLocalCache();
     }
     List<E> list;
     try {
       queryStack++;
+      // 读取一级缓存
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
+        // 查库
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
     } finally {
       queryStack--;
     }
+    // 计数器归零时，证明所有查询都已经完成，处理后续动作
     if (queryStack == 0) {
+      // 处理延迟加载
       for (DeferredLoad deferredLoad : deferredLoads) {
         deferredLoad.load();
       }
       // issue #601
       deferredLoads.clear();
+      //如果全局配置文件中声明的一级缓存作用域是statement，则应该清空一级缓存(因为此时statement已经处理完毕了)
       if (configuration.getLocalCacheScope() == LocalCacheScope.STATEMENT) {
         // issue #482
         clearLocalCache();
@@ -320,12 +333,15 @@ public abstract class BaseExecutor implements Executor {
 
   private <E> List<E> queryFromDatabase(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
     List<E> list;
+    // 缓存占位，代表此时还没有查询到数据
     localCache.putObject(key, EXECUTION_PLACEHOLDER);
     try {
+      // 执行查询，以及结果集的封装
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
     } finally {
       localCache.removeObject(key);
     }
+    // 查询结果放入缓存
     localCache.putObject(key, list);
     if (ms.getStatementType() == StatementType.CALLABLE) {
       localOutputParameterCache.putObject(key, parameter);

@@ -21,9 +21,11 @@ import org.apache.ibatis.session.ResultContext;
  * @author Clinton Begin
  */
 public class DefaultResultContext<T> implements ResultContext<T> {
-
+  // 当前返回结果集封装的对象
   private T resultObject;
+  // 这个对象在返回集合的位置(下标)
   private int resultCount;
+  // 是否停止后续的映射
   private boolean stopped;
 
   public DefaultResultContext() {

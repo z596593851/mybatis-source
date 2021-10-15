@@ -26,19 +26,37 @@ import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
- * @author Clinton Begin
+ * ResultMap中的每一项就是一个ResultMapping
  */
 public class ResultMapping {
 
   private Configuration configuration;
+  /**
+   * 实体类的属性名
+   */
   private String property;
+  /**
+   * 结果集的列名
+   */
   private String column;
+  /**
+   * 映射属性的类型(可能是关联属性)
+   */
   private Class<?> javaType;
   private JdbcType jdbcType;
   private TypeHandler<?> typeHandler;
+  /**
+   * 直接引用另一个resultMap的全限定名
+   */
   private String nestedResultMapId;
+  /**
+   * 关联查询的statement全限定名(用于延迟加载)
+   */
   private String nestedQueryId;
   private Set<String> notNullColumns;
+  /**
+   * 引用其它resultMap时列名的前缀
+   */
   private String columnPrefix;
   private List<ResultFlag> flags;
   private List<ResultMapping> composites;

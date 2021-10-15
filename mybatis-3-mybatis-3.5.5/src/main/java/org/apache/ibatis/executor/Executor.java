@@ -34,18 +34,23 @@ public interface Executor {
 
   ResultHandler NO_RESULT_HANDLER = null;
 
+  // 执行insert update delete语句
   int update(MappedStatement ms, Object parameter) throws SQLException;
 
+  // 执行select（带二级缓存）
   <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey cacheKey, BoundSql boundSql) throws SQLException;
 
+  // 执行select（不带缓存）
   <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException;
 
   <E> Cursor<E> queryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds) throws SQLException;
 
   List<BatchResult> flushStatements() throws SQLException;
 
+  // 提交事务
   void commit(boolean required) throws SQLException;
 
+  // 回滚事务
   void rollback(boolean required) throws SQLException;
 
   CacheKey createCacheKey(MappedStatement ms, Object parameterObject, RowBounds rowBounds, BoundSql boundSql);
@@ -56,6 +61,7 @@ public interface Executor {
 
   void deferLoad(MappedStatement ms, MetaObject resultObject, String property, CacheKey key, Class<?> targetType);
 
+  // 开启事务
   Transaction getTransaction();
 
   void close(boolean forceRollback);

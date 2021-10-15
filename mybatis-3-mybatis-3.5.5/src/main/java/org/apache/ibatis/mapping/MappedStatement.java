@@ -29,10 +29,12 @@ import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
 /**
- * @author Clinton Begin
+ * mapper.xml 中的 select、insert 都会在底层封装为一个一个的 MappedStatement
  */
 public final class MappedStatement {
-
+  /**
+   * 当前mapper的来源(mapper.xml / Mapper.class的路径)
+   */
   private String resource;
   private Configuration configuration;
   private String id;
@@ -40,11 +42,26 @@ public final class MappedStatement {
   private Integer timeout;
   private StatementType statementType;
   private ResultSetType resultSetType;
+  /**
+   * statement内部封装的SQL
+   */
   private SqlSource sqlSource;
+  /**
+   * 当前statement对应的mapper.xml或Mapper接口的namespace下的二级缓存
+   */
   private Cache cache;
   private ParameterMap parameterMap;
+  /**
+   * 如果是select，则此处存放返回值的映射(resultMap和resultType都在这里)
+   */
   private List<ResultMap> resultMaps;
+  /**
+   * 执行此条SQL之前是否需要清空二级缓存
+   */
   private boolean flushCacheRequired;
+  /**
+   * 当前SQL是否使用二级缓存
+   */
   private boolean useCache;
   private boolean resultOrdered;
   private SqlCommandType sqlCommandType;
@@ -302,6 +319,8 @@ public final class MappedStatement {
   }
 
   public BoundSql getBoundSql(Object parameterObject) {
+    // 使用SqlSource，根据传入的参数，构造出BoundSql
+    // 将#{}解析成 ? 占位符
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
     if (parameterMappings == null || parameterMappings.isEmpty()) {

@@ -235,16 +235,22 @@ public class MapperAnnotationBuilder {
     Arg[] args = method.getAnnotationsByType(Arg.class);
     Result[] results = method.getAnnotationsByType(Result.class);
     TypeDiscriminator typeDiscriminator = method.getAnnotation(TypeDiscriminator.class);
+    // 生成ResultMap的名称
     String resultMapId = generateResultMapName(method);
+    // 构造ResultMap
     applyResultMap(resultMapId, returnType, args, results, typeDiscriminator);
     return resultMapId;
   }
 
   private String generateResultMapName(Method method) {
     Results results = method.getAnnotation(Results.class);
+    // 有定义，直接取
     if (results != null && !results.id().isEmpty()) {
       return type.getName() + "." + results.id();
     }
+    // 没有定义，自动生成
+    // List<Department> findAll() ：findAll-void
+    // Department findById(String id) ：findById-String
     StringBuilder suffix = new StringBuilder();
     for (Class<?> c : method.getParameterTypes()) {
       suffix.append("-");
@@ -257,11 +263,16 @@ public class MapperAnnotationBuilder {
   }
 
   private void applyResultMap(String resultMapId, Class<?> returnType, Arg[] args, Result[] results, TypeDiscriminator discriminator) {
+    // 处理resultMapping
     List<ResultMapping> resultMappings = new ArrayList<>();
+    // 处理构造器参数
     applyConstructorArgs(args, returnType, resultMappings);
+    // 处理<id>,<result>等参数
     applyResults(results, returnType, resultMappings);
+    // 处理鉴别器
     Discriminator disc = applyDiscriminator(resultMapId, returnType, discriminator);
     // TODO add AutoMappingBehaviour
+    // 构造ResultMap
     assistant.addResultMap(resultMapId, returnType, null, disc, resultMappings, null);
     createDiscriminatorResultMaps(resultMapId, returnType, discriminator);
   }
@@ -301,18 +312,27 @@ public class MapperAnnotationBuilder {
   }
 
   void parseStatement(Method method) {
+    // 解析参数类型
+    // List<Department> findAll() → 无入参 → null
+    // Department findById(String id) → 单参数 → Class<?>
+    // List<User> findByUsernameAndPassword(String username, String password) → 多参数 → ParamMap.class
     final Class<?> parameterTypeClass = getParameterType(method);
     final LanguageDriver languageDriver = getLanguageDriver(method);
 
+    // 解析statement方法
     getAnnotationWrapper(method, true, statementAnnotationTypes).ifPresent(statementAnnotation -> {
+      // 构造SQL语句源
       final SqlSource sqlSource = buildSqlSource(statementAnnotation.getAnnotation(), parameterTypeClass, languageDriver, method);
       final SqlCommandType sqlCommandType = statementAnnotation.getSqlCommandType();
+      // 解析statement的配置
       final Options options = getAnnotationWrapper(method, false, Options.class).map(x -> (Options)x.getAnnotation()).orElse(null);
+      // 生成statementId
       final String mappedStatementId = type.getName() + "." + method.getName();
 
       final KeyGenerator keyGenerator;
       String keyProperty = null;
       String keyColumn = null;
+      // 处理KeyGenerator
       if (SqlCommandType.INSERT.equals(sqlCommandType) || SqlCommandType.UPDATE.equals(sqlCommandType)) {
         // first check for SelectKey annotation - that overrides everything else
         SelectKey selectKey = getAnnotationWrapper(method, false, SelectKey.class).map(x -> (SelectKey)x.getAnnotation()).orElse(null);
@@ -330,6 +350,7 @@ public class MapperAnnotationBuilder {
         keyGenerator = NoKeyGenerator.INSTANCE;
       }
 
+      // 处理其他的配置,诸如 fetchSize 、useCache 、timeout
       Integer fetchSize = null;
       Integer timeout = null;
       StatementType statementType = StatementType.PREPARED;
@@ -352,6 +373,7 @@ public class MapperAnnotationBuilder {
         }
       }
 
+      // 处理resultMapId
       String resultMapId = null;
       if (isSelect) {
         ResultMap resultMapAnnotation = method.getAnnotation(ResultMap.class);
@@ -362,6 +384,7 @@ public class MapperAnnotationBuilder {
         }
       }
 
+      // 生成MappedStatement
       assistant.addMappedStatement(
           mappedStatementId,
           sqlSource,
@@ -455,7 +478,9 @@ public class MapperAnnotationBuilder {
       } else if (method.isAnnotationPresent(MapKey.class) && Map.class.isAssignableFrom(rawType)) {
         // (gcode issue 504) Do not look into Maps if there is not MapKey annotation
         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+        // 泛型个数必须为2个
         if (actualTypeArguments != null && actualTypeArguments.length == 2) {
+          // 解析第1个，即value类型
           Type returnTypeParameter = actualTypeArguments[1];
           if (returnTypeParameter instanceof Class<?>) {
             returnType = (Class<?>) returnTypeParameter;
@@ -644,6 +669,7 @@ public class MapperAnnotationBuilder {
 
   private SqlSource buildSqlSourceFromStrings(String[] strings, Class<?> parameterTypeClass,
       LanguageDriver languageDriver) {
+    //和解析mapper.xml的sql套路相同
     return languageDriver.createSqlSource(configuration, String.join(" ", strings).trim(), parameterTypeClass);
   }
 
